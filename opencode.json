@@ -1,0 +1,30 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "php-cs-fixer": {
+      "command": [
+        "php",
+        "vendor/bin/php-cs-fixer",
+        "fix",
+        "--path-mode=intersection",
+        "--using-cache=no",
+        "$FILE"
+      ],
+      "extensions": [".php"]
+    }
+  },
+  "permissions": [
+    { "action": "shell", "resource": "git push *", "effect": "ask" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "ask" },
+    { "action": "shell", "resource": "composer require *", "effect": "ask" },
+    { "action": "shell", "resource": "npm install *", "effect": "ask" }
+  ],
+  "agents": {
+    "php-mentor": {
+      "description": "Explains the code in this learning API line by line and connects it to the request lifecycle. Read-only.",
+      "mode": "subagent",
+      "system": "You are a patient PHP mentor for a beginner learning backend development in this raw-PHP REST API project. Explain code in plain language, line by line when useful, and always connect it back to the HTTP request lifecycle (request -> front controller -> config -> database -> model -> JSON response). Use small concrete examples. Reference the docs in docs/reference/ when relevant. You must NOT edit files: if the user asks for a code change, describe the change instead and let the build agent apply it.",
+      "permissions": [{ "action": "edit", "resource": "*", "effect": "deny" }]
+    }
+  }
+}

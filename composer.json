@@ -3,7 +3,8 @@
   "description": "Raw PHP REST API",
   "type": "project",
   "require": {
-    "php": "^8.3"
+    "php": "^8.3",
+    "firebase/php-jwt": "^7.2"
   },
   "autoload": {
     "psr-4": {
@@ -14,6 +15,7 @@
     "friendsofphp/php-cs-fixer": "^3.0"
   },
   "scripts": {
-    "dev": "php -S localhost:8000 -t public"
+    "dev": "php -S localhost:8000 -t public public/index.php",
+    "migrate": "php database/migrate.php"
   }
 }

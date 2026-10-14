@@ -2,47 +2,29 @@
 
 declare(strict_types=1);
 
-header('Content-Type: application/json');
+/**
+ * Front controller — the single entry point for every request.
+ *
+ * The PHP dev server is started with this file as its "router script":
+ *
+ *     php -S localhost:8000 -t public public/index.php
+ *
+ * so every request lands here, no matter which URL was requested.
+ */
+
+use App\Config\Config;
+use App\Core\Application;
+use App\Database\Database;
+use App\Http\Request;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Config\Config;
-use App\Database\Database;
-use App\Models\Post;
+// Never let PHP print warnings/notices into the body: it would corrupt the JSON.
+// Application::run() turns thrown errors into clean JSON responses instead.
+ini_set('display_errors', '0');
 
-$config = new Config(
-    __DIR__ . '/../.env'
-);
+$config = new Config(__DIR__ . '/../.env');
+$db = (new Database($config))->connect();
 
-$database = new Database($config);
-
-$db = $database->connect();
-
-$post = new Post($db);
-
-$result = $post->read();
-
-$count = $result->rowCount();
-
-if ($count > 0) {
-    $post_arr = [
-        'data' => []
-    ];
-
-    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-        $post_arr['data'][] = [
-            'id' => $row['id'],
-            'title' => $row['title'],
-            'body' => html_entity_decode($row['body']),
-            'author' => $row['author'],
-            'category_id' => $row['category_id'],
-            'category_name' => $row['category_name'],
-        ];
-    }
-
-    echo json_encode($post_arr);
-} else {
-    echo json_encode([
-        'err' => 'nothing here'
-    ]);
-}
+$app = new Application($config, $db);
+$app->run(Request::capture());
