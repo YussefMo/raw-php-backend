@@ -1,15 +1,35 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
+import { useAuth } from '../auth';
 
 export default function Posts({ onOpen }) {
+  const { user, token } = useAuth();
   const [posts, setPosts] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    api('/')
+  const isAdmin = user?.role === 'admin';
+
+  function load() {
+    return api('/')
       .then((d) => setPosts(d.data))
       .catch((e) => setError(e.message));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
+
+  async function remove(e, id) {
+    e.stopPropagation();
+    if (!window.confirm('Delete this post?')) return;
+    setError('');
+    try {
+      await api(`/posts/${id}`, { method: 'DELETE', token });
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   if (error) return <p className="error">{error}</p>;
   if (!posts) return <p>Loading posts…</p>;
@@ -18,12 +38,15 @@ export default function Posts({ onOpen }) {
   return (
     <ul className="posts">
       {posts.map((p) => (
-        <li key={p.id} onClick={() => onOpen(p.id)}>
-          <h3>{p.title}</h3>
-          <p className="meta">
-            {p.author} · {p.category_name ?? 'uncategorized'} · {p.created_at}
-          </p>
-          <p className="excerpt">{(p.body ?? '').slice(0, 140)}</p>
+        <li key={p.id}>
+          <div className="post-body" onClick={() => onOpen(p.id)}>
+            <h3>{p.title}</h3>
+            <p className="meta">
+              {p.author} · {p.category_name ?? 'uncategorized'} · {p.created_at}
+            </p>
+            <p className="excerpt">{(p.body ?? '').slice(0, 140)}</p>
+          </div>
+          {isAdmin && <button onClick={(e) => remove(e, p.id)}>Delete</button>}
         </li>
       ))}
     </ul>

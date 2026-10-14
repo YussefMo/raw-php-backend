@@ -94,6 +94,31 @@ final class Migrator
         $this->log("Done. {$ran} migrated, {$skipped} skipped.");
     }
 
+    /**
+     * Drop every table in the current database, then migrate from zero.
+     *
+     * Destructive: use it to reset a development database (the `migrate:fresh`
+     * composer script). It only ever touches the database in .env.
+     */
+    public function fresh(): void
+    {
+        $this->dropAllTables();
+        $this->run();
+    }
+
+    /** Drop all tables, ignoring foreign-key order. */
+    private function dropAllTables(): void
+    {
+        $this->db->exec('SET FOREIGN_KEY_CHECKS = 0');
+
+        $tables = $this->db->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($tables as $table) {
+            $this->db->exec("DROP TABLE IF EXISTS `{$table}`");
+        }
+
+        $this->db->exec('SET FOREIGN_KEY_CHECKS = 1');
+    }
+
     /** Create the ledger table if it is not there yet. */
     private function ensureLedgerTable(): void
     {

@@ -70,6 +70,10 @@ final class Application
 
         // --- Authenticated routes (any role) -------------------------------
         $this->router->get('/auth/me', [$authController, 'me'], [$auth]);
+        // "My Posts" and deletion: any authenticated user. Whether a caller may
+        // actually delete a given post (admin vs owner) is checked in the controller.
+        $this->router->get('/me/posts', [$postController, 'mine'], [$auth]);
+        $this->router->delete('/posts/{id}', [$postController, 'destroy'], [$auth]);
 
         // --- Author or admin ---------------------------------------------
         // Authors need the category list to fill the "new post" dropdown.

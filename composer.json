@@ -16,6 +16,7 @@
   },
   "scripts": {
     "dev": "php -S localhost:8000 -t public public/index.php",
-    "migrate": "php database/migrate.php"
+    "migrate": "php database/migrate.php migrate",
+    "migrate:fresh": "php database/migrate.php fresh"
   }
 }

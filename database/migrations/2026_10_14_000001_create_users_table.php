@@ -7,10 +7,10 @@ use App\Config\Config;
 use App\Database\MigrationInterface;
 
 /**
- * Creates the `users` table and seeds one admin account.
+ * Creates the `users` table and seeds one admin account from .env.
  *
- * The Migrator skips this whole file if a `users` table already exists, so it is
- * safe to run repeatedly.
+ * All tables in this project use utf8mb4 / utf8mb4_unicode_ci so that joining
+ * text columns across tables never hits a collation mismatch.
  */
 return new class () implements MigrationInterface {
     public function table(): ?string
@@ -28,6 +28,7 @@ return new class () implements MigrationInterface {
                 password_hash VARCHAR(255) NOT NULL,
                 role ENUM('admin', 'author', 'user') NOT NULL DEFAULT 'user',
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (id),
                 UNIQUE KEY users_email_unique (email)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"

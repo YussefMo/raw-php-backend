@@ -26,6 +26,8 @@ authorization system** on top of MySQL via PDO.
 | `POST` | `/auth/register`  | no   | anyone             | Create an account                |
 | `POST` | `/auth/login`     | no   | anyone             | Get a JWT access token           |
 | `GET`  | `/auth/me`        | yes  | any authenticated  | Current user                     |
+| `GET`  | `/me/posts`       | yes  | any authenticated  | Posts owned by the current user ("My Posts") |
+| `DELETE` | `/posts/{id}`   | yes  | `admin` or owner   | Delete a post                    |
 | `POST` | `/posts`          | yes  | `admin`, `author`  | Create a post (`category_id` required) |
 | `GET`  | `/categories`     | yes  | `admin`, `author`  | List categories (fills the new-post dropdown) |
 | `POST` | `/categories`     | yes  | `admin`            | Create a category                |
@@ -123,6 +125,7 @@ wsl -d Ubuntu -- bash -lc "cd ~/projects/1st-api && <command>"
 | --------------------------- | ---------------------------------------------------- |
 | Start the dev API           | `composer run dev`                                   |
 | Run migrations              | `composer run migrate`                               |
+| Reset DB (drop + migrate)   | `composer run migrate:fresh` — destructive, dev only |
 | Format all PHP              | `npm run format:php` (`php-cs-fixer fix`)            |
 | Check PHP formatting        | `npm run format:php:check`                           |
 | Format JS/JSON/MD           | `npm run format` (Prettier)                          |
@@ -282,37 +285,66 @@ step-by-step "how to add an endpoint": [`docs/reference/architecture.md`](docs/r
 
 ## 9. Database & migrations
 
-Tables: `users` (created by migration), plus the pre-existing `posts` and
-`categories`, and a `migrations` ledger table maintained by `Migrator`.
+**Every table is created by a migration** — there is no hand-made schema. The
+whole schema is built from `database/migrations/`, plus a `migrations` ledger
+table maintained by `Migrator`.
 
-**Migrations** live in `database/migrations/` as files like
-`2026_10_14_000001_create_users_table.php`. Each returns an anonymous class
-implementing `App\Database\MigrationInterface`:
+```
+database/migrations/
+  2026_10_14_000001_create_users_table.php        users + seeds the admin from .env
+  2026_10_14_000002_create_categories_table.php   categories + 5 starter rows
+  2026_10_14_000003_create_posts_table.php        posts (FKs to users + categories)
+```
 
-- `table(): ?string` — the main table it manages (used to detect "already exists").
+Each migration returns an anonymous class implementing
+`App\Database\MigrationInterface`:
+
+- `table(): ?string` — the main table it manages, or **`null` for an `ALTER` or
+  data migration** (so the "already exists" shortcut does not apply).
 - `up(PDO $db, Config $config): void` — apply.
 - `down(PDO $db): void` — reverse.
 
-`composer run migrate` → `database/migrate.php` → `Migrator::run()`:
+### Commands
+
+- `composer run migrate` → apply pending migrations.
+- `composer run migrate:fresh` → `Migrator::fresh()`: drop **every** table, then
+  migrate from zero. Destructive; dev only.
+
+`Migrator::run()`:
 
 1. Create the `migrations` ledger table if missing.
 2. Load already-applied migration names.
 3. For each migration file (sorted by name):
    - already recorded → skip;
-   - its table already exists in the DB → record as applied and skip;
+   - its table already exists in the DB → record as applied and skip
+     (only when `table()` is non-null);
    - otherwise → run `up()` and record it.
 
-That "check the database first" step is what makes the command safe to run
-against an existing database. **New migrations must be idempotent and must not
-touch existing tables** (`posts`, `categories`).
+### Schema
 
-Schema reference (keep in sync with migrations):
+All tables use `ENGINE=InnoDB` + `utf8mb4_unicode_ci` (uniform, so joins never
+hit a collation mismatch).
 
 ```sql
-users(id, name, email UNIQUE, password_hash, role ENUM('admin','author','user'), created_at)
-posts(id, title, body, author, category_id, created_at)
-categories(id, name)
+users(id, name, email UNIQUE, password_hash, role ENUM('admin','author','user'),
+      created_at, updated_at)
+
+categories(id, name UNIQUE, created_at, updated_at)
+
+posts(id,
+      user_id     NOT NULL → users(id)      ON DELETE CASCADE,
+      category_id NOT NULL → categories(id) ON DELETE RESTRICT,
+      title, body, created_at, updated_at)
 ```
+
+Design rules:
+
+- **Nothing nullable where it matters.** `posts.user_id` and `posts.category_id`
+  are `NOT NULL` with real FKs, so a post can never be orphaned.
+- **No denormalised `author` column.** The author name is joined from `users`
+  (`u.name AS author`), so renaming a user is reflected everywhere.
+- Deleting a user cascades to their posts; deleting an in-use category is blocked
+  by the FK (and the API returns 409 first).
 
 ---
 
@@ -364,10 +396,9 @@ layer changes.
 - **No tests yet.** Add PHPUnit when the human asks.
 - **Roles can't be changed through the API** — an admin would need SQL, or a new
   `PATCH /admin/users/{id}/role` endpoint (a good next exercise).
-- No DB foreign key on `posts.category_id`, so the pre-existing orphan post with
-  `category_id = 10` still exists. The API now validates `category_id` on create
-  and blocks deleting an in-use category, but a data cleanup + FK migration would
-  be the belt-and-braces fix.
+- The database is rebuilt entirely from migrations, with real FKs on
+  `posts.user_id` and `posts.category_id`. Beyond the admin and the five starter
+  categories there is **no seed data** — create content through the API/UI.
 
 ---
 

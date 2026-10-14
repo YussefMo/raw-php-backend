@@ -5,6 +5,7 @@ import PostDetail from './views/PostDetail';
 import CreatePost from './views/CreatePost';
 import AdminUsers from './views/AdminUsers';
 import AdminCategories from './views/AdminCategories';
+import MyPosts from './views/MyPosts';
 import Login from './views/Login';
 
 export default function App() {
@@ -27,6 +28,11 @@ export default function App() {
           <button className={view.name === 'posts' ? 'active' : ''} onClick={() => go('posts')}>
             Posts
           </button>
+          {user && (
+            <button className={view.name === 'mine' ? 'active' : ''} onClick={() => go('mine')}>
+              My Posts
+            </button>
+          )}
           {canPublish && (
             <button className={view.name === 'create' ? 'active' : ''} onClick={() => go('create')}>
               New Post
@@ -64,6 +70,7 @@ export default function App() {
 
       <main>
         {view.name === 'posts' && <Posts onOpen={(id) => go('post', { id })} />}
+        {view.name === 'mine' && <MyPosts onOpen={(id) => go('post', { id })} />}
         {view.name === 'post' && <PostDetail id={view.id} onBack={() => go('posts')} />}
         {view.name === 'create' && <CreatePost onCreated={(id) => go('post', { id })} />}
         {view.name === 'users' && <AdminUsers />}

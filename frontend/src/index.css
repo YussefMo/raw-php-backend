@@ -103,6 +103,13 @@ header nav {
   border-radius: 8px;
   padding: 14px 16px;
   background: #fff;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.post-body {
+  flex: 1;
   cursor: pointer;
 }
 
