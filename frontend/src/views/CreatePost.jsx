@@ -1,12 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
 
 export default function CreatePost({ onCreated }) {
   const { token } = useAuth();
+  const [categories, setCategories] = useState(null);
   const [form, setForm] = useState({ title: '', body: '', category_id: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api('/categories', { token })
+      .then((d) => setCategories(d.data))
+      .catch((e) => setError(e.message));
+  }, [token]);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
@@ -15,15 +22,19 @@ export default function CreatePost({ onCreated }) {
     setError('');
     setBusy(true);
     try {
-      const body = {
-        title: form.title,
-        body: form.body,
-        category_id: form.category_id === '' ? null : Number(form.category_id),
-      };
-      const d = await api('/posts', { method: 'POST', body, token });
+      const d = await api('/posts', {
+        method: 'POST',
+        token,
+        body: {
+          title: form.title,
+          body: form.body,
+          category_id: form.category_id === '' ? null : Number(form.category_id),
+        },
+      });
       onCreated(d.data.id);
     } catch (err) {
-      setError(err.data?.errors?.title ?? err.message);
+      const errors = err.data?.errors;
+      setError(errors ? Object.values(errors).join(' ') : err.message);
     } finally {
       setBusy(false);
     }
@@ -41,11 +52,18 @@ export default function CreatePost({ onCreated }) {
         <textarea rows={6} value={form.body} onChange={set('body')} />
       </label>
       <label>
-        Category id
-        <input value={form.category_id} onChange={set('category_id')} placeholder="1" />
+        Category
+        <select value={form.category_id} onChange={set('category_id')} disabled={!categories}>
+          <option value="">{categories ? 'Select a category…' : 'Loading…'}</option>
+          {categories?.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </label>
       {error && <p className="error">{error}</p>}
-      <button disabled={busy}>{busy ? 'Saving…' : 'Create'}</button>
+      <button disabled={busy || !categories}>{busy ? 'Saving…' : 'Create'}</button>
     </form>
   );
 }

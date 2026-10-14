@@ -58,8 +58,8 @@ final class Post
         return $row === false ? null : $row;
     }
 
-    /** Create a post and return the new id. */
-    public function create(string $title, string $body, string $author, ?int $categoryId): int
+    /** Create a post and return the new id. category_id is required (NOT NULL). */
+    public function create(string $title, string $body, string $author, int $categoryId): int
     {
         $stmt = $this->db->prepare(
             'INSERT INTO posts (title, body, author, category_id) VALUES (?, ?, ?, ?)'

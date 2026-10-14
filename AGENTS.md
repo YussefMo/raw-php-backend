@@ -26,7 +26,10 @@ authorization system** on top of MySQL via PDO.
 | `POST` | `/auth/register`  | no   | anyone             | Create an account                |
 | `POST` | `/auth/login`     | no   | anyone             | Get a JWT access token           |
 | `GET`  | `/auth/me`        | yes  | any authenticated  | Current user                     |
-| `POST` | `/posts`          | yes  | `admin`, `author`  | Create a post                    |
+| `POST` | `/posts`          | yes  | `admin`, `author`  | Create a post (`category_id` required) |
+| `GET`  | `/categories`     | yes  | `admin`, `author`  | List categories (fills the new-post dropdown) |
+| `POST` | `/categories`     | yes  | `admin`            | Create a category                |
+| `DELETE` | `/categories/{id}` | yes | `admin`           | Delete a category (409 if it has posts) |
 | `GET`  | `/admin/users`    | yes  | `admin`            | List all users                   |
 
 **Roles** (`App\Auth\Role`, stored in `users.role`):
@@ -361,7 +364,10 @@ layer changes.
 - **No tests yet.** Add PHPUnit when the human asks.
 - **Roles can't be changed through the API** — an admin would need SQL, or a new
   `PATCH /admin/users/{id}/role` endpoint (a good next exercise).
-- `CategoryController` doesn't exist; posts reference `category_id` freely.
+- No DB foreign key on `posts.category_id`, so the pre-existing orphan post with
+  `category_id = 10` still exists. The API now validates `category_id` on create
+  and blocks deleting an in-use category, but a data cleanup + FK migration would
+  be the belt-and-braces fix.
 
 ---
 

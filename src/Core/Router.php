@@ -46,6 +46,12 @@ final class Router
         $this->add('POST', $path, $handler, $middleware);
     }
 
+    /** @param MiddlewareInterface[] $middleware */
+    public function delete(string $path, callable $handler, array $middleware = []): void
+    {
+        $this->add('DELETE', $path, $handler, $middleware);
+    }
+
     /**
      * @param MiddlewareInterface[] $middleware
      */

@@ -186,3 +186,34 @@ header nav {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
 }
+
+.row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.row input {
+  flex: 1;
+}
+
+.rows {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.rows li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rows li:last-child {
+  border-bottom: none;
+}

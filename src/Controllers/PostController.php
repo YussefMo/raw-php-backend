@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Http\Request;
 use App\Http\Response;
+use App\Models\Category;
 use App\Models\Post;
 
 /**
@@ -18,6 +19,7 @@ final class PostController
 {
     public function __construct(
         private Post $posts,
+        private Category $categories,
     ) {
     }
 
@@ -63,23 +65,29 @@ final class PostController
         $body = trim((string) $request->input('body', ''));
         $categoryId = $request->input('category_id');
 
+        $errors = [];
         if ($title === '') {
-            return Response::json([
-                'error' => 'Validation failed',
-                'errors' => ['title' => 'Title is required.'],
-            ], 422);
+            $errors['title'] = 'Title is required.';
+        }
+
+        // category_id is required and MUST reference a real category.
+        // This is the fix for "the API accepted category_id = 10 when only 5
+        // categories exist": we verify it against the database before saving.
+        if ($categoryId === null || $categoryId === '' || filter_var($categoryId, FILTER_VALIDATE_INT) === false) {
+            $errors['category_id'] = 'A valid category id is required.';
+        } elseif (!$this->categories->exists((int) $categoryId)) {
+            $errors['category_id'] = 'That category does not exist.';
+        }
+
+        if ($errors !== []) {
+            return Response::json(['error' => 'Validation failed', 'errors' => $errors], 422);
         }
 
         // The post is attributed to the authenticated user, never to a value the
         // client sends — otherwise anyone could post as someone else.
         $author = $user?->name ?? 'unknown';
 
-        $id = $this->posts->create(
-            $title,
-            $body,
-            $author,
-            $categoryId === null ? null : (int) $categoryId,
-        );
+        $id = $this->posts->create($title, $body, $author, (int) $categoryId);
 
         return Response::json(['data' => $this->posts->find($id)], 201);
     }
