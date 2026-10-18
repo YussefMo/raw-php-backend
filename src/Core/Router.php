@@ -52,6 +52,12 @@ final class Router
         $this->add('DELETE', $path, $handler, $middleware);
     }
 
+    /** @param MiddlewareInterface[] $middleware */
+    public function patch(string $path, callable $handler, array $middleware = []): void
+    {
+        $this->add('PATCH', $path, $handler, $middleware);
+    }
+
     /**
      * @param MiddlewareInterface[] $middleware
      */

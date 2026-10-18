@@ -17,22 +17,23 @@ authorization system** on top of MySQL via PDO.
 
 **Endpoints**
 
-| Method | Path              | Auth | Allowed roles      | Purpose                          |
-| ------ | ----------------- | ---- | ------------------ | -------------------------------- |
-| `GET`  | `/`               | no   | anyone             | List all posts                   |
-| `GET`  | `/posts`          | no   | anyone             | List all posts                   |
-| `GET`  | `/posts/{id}`     | no   | anyone             | Get one post                     |
-| `GET`  | `/id?id=1`        | no   | anyone             | Legacy alias for a single post   |
-| `POST` | `/auth/register`  | no   | anyone             | Create an account                |
-| `POST` | `/auth/login`     | no   | anyone             | Get a JWT access token           |
-| `GET`  | `/auth/me`        | yes  | any authenticated  | Current user                     |
-| `GET`  | `/me/posts`       | yes  | any authenticated  | Posts owned by the current user ("My Posts") |
-| `DELETE` | `/posts/{id}`   | yes  | `admin` or owner   | Delete a post                    |
-| `POST` | `/posts`          | yes  | `admin`, `author`  | Create a post (`category_id` required) |
-| `GET`  | `/categories`     | yes  | `admin`, `author`  | List categories (fills the new-post dropdown) |
-| `POST` | `/categories`     | yes  | `admin`            | Create a category                |
-| `DELETE` | `/categories/{id}` | yes | `admin`           | Delete a category (409 if it has posts) |
-| `GET`  | `/admin/users`    | yes  | `admin`            | List all users                   |
+| Method   | Path               | Auth | Allowed roles     | Purpose                                       |
+| -------- | ------------------ | ---- | ----------------- | --------------------------------------------- |
+| `GET`    | `/`                | no   | anyone            | List all posts                                |
+| `GET`    | `/posts`           | no   | anyone            | List all posts                                |
+| `GET`    | `/posts/{id}`      | no   | anyone            | Get one post                                  |
+| `GET`    | `/id?id=1`         | no   | anyone            | Legacy alias for a single post                |
+| `POST`   | `/auth/register`   | no   | anyone            | Create an account                             |
+| `POST`   | `/auth/login`      | no   | anyone            | Get a JWT access token                        |
+| `GET`    | `/auth/me`         | yes  | any authenticated | Current user                                  |
+| `GET`    | `/me/posts`        | yes  | any authenticated | Posts owned by the current user ("My Posts")  |
+| `PATCH`  | `/posts/{id}`      | yes  | `admin` or owner  | Update a post (partial)                       |
+| `DELETE` | `/posts/{id}`      | yes  | `admin` or owner  | Delete a post                                 |
+| `POST`   | `/posts`           | yes  | `admin`, `author` | Create a post (`category_id` required)        |
+| `GET`    | `/categories`      | yes  | `admin`, `author` | List categories (fills the new-post dropdown) |
+| `POST`   | `/categories`      | yes  | `admin`           | Create a category                             |
+| `DELETE` | `/categories/{id}` | yes  | `admin`           | Delete a category (409 if it has posts)       |
+| `GET`    | `/admin/users`     | yes  | `admin`           | List all users                                |
 
 **Roles** (`App\Auth\Role`, stored in `users.role`):
 
@@ -54,11 +55,11 @@ instincts, these win.
    Composer/npm package unless the human explicitly asks. Solve problems with the
    standard library first. `firebase/php-jwt` is the one sanctioned dependency
    (see §10) — use it, don't add another.
-2. **Explain, don't just deliver.** After writing code, explain *what* changed,
-   *why* it works, and *where it fits in the request lifecycle* (§5). Assume a
+2. **Explain, don't just deliver.** After writing code, explain _what_ changed,
+   _why_ it works, and _where it fits in the request lifecycle_ (§5). Assume a
    beginner is reading.
 3. **Comment the "why", not the obvious.** Short, plain-language comments at the
-   top of each file/class and on non-obvious blocks. Explain the *reason*
+   top of each file/class and on non-obvious blocks. Explain the _reason_
    ("prepared statements stop SQL injection"), not the syntax.
 4. **Keep it small and explicit.** Several obvious steps beat one clever line.
    Name advanced constructs and add them to `docs/reference/glossary.md`.
@@ -81,8 +82,9 @@ instincts, these win.
      and is only created by the migration seed or promoted by an admin.
    - **Never return `password_hash`.** Users leave the API only through
      `User::toArray()`.
-9. **Verify.** After changing PHP, say how to test it (curl) and run the
-   formatter (§4). Never claim something works without a way to check it.
+9. **Verify.** After changing PHP, run `composer test` and the formatter (§4),
+   and say how to check it by hand (curl). Never claim something works without a
+   way to check it.
 10. **Fix small rough edges you touch** (§12) and mention the fix.
 
 If a request is ambiguous, ask a short clarifying question rather than guessing.
@@ -96,15 +98,15 @@ If a request is ambiguous, ask a short clarifying question rather than guessing.
 | Language         | PHP `^8.3`                                                             |
 | Autoloading      | Composer **PSR-4**: `App\` → `src/`                                    |
 | Database         | MySQL via **PDO** (`mysql:` DSN)                                       |
-| Auth tokens      | **`firebase/php-jwt`** (HS256), wrapped by `App\Auth\JwtService`        |
+| Auth tokens      | **`firebase/php-jwt`** (HS256), wrapped by `App\Auth\JwtService`       |
 | Passwords        | PHP built-in `password_hash()` / `password_verify()`                   |
 | Web server (dev) | PHP built-in server with `public/index.php` as the router script       |
-| Env loading      | Hand-rolled `App\Config\Config` reading `.env` via `parse_ini_file`     |
-| Migrations       | Hand-rolled runner in `App\Database\Migrator` + `database/migrations/`  |
+| Env loading      | Hand-rolled `App\Config\Config` reading `.env` via `parse_ini_file`    |
+| Migrations       | Hand-rolled runner in `App\Database\Migrator` + `database/migrations/` |
 | PHP formatting   | `friendsofphp/php-cs-fixer` (PSR-12 + extras)                          |
 | JS/MD formatting | Prettier + `@prettier/plugin-php`                                      |
-| Tests            | **None yet** (`tests/` is empty, `npm test` is a placeholder)          |
-| Frontend         | React 18 + Vite 5 in `frontend/`, calling this API over CORS            |
+| Tests            | **PHPUnit 12** in `tests/` — feature tests, run with `composer test`   |
+| Frontend         | React 18 + Vite 5 in `frontend/`, calling this API over CORS           |
 
 > No framework and no DI container. Everything except the JWT library is written
 > by hand on purpose.
@@ -121,21 +123,22 @@ UNC path):
 wsl -d Ubuntu -- bash -lc "cd ~/projects/1st-api && <command>"
 ```
 
-| Task                        | Command                                              |
-| --------------------------- | ---------------------------------------------------- |
-| Start the dev API           | `composer run dev`                                   |
-| Run migrations              | `composer run migrate`                               |
-| Reset DB (drop + migrate)   | `composer run migrate:fresh` — destructive, dev only |
-| Format all PHP              | `npm run format:php` (`php-cs-fixer fix`)            |
-| Check PHP formatting        | `npm run format:php:check`                           |
-| Format JS/JSON/MD           | `npm run format` (Prettier)                          |
-| Frontend dev (port 5173)    | `npm run dev` — run from the repo root               |
-| Install frontend deps       | `npm --prefix frontend install` (once)               |
-| Frontend production build   | `npm run build:frontend`                             |
+| Task                      | Command                                              |
+| ------------------------- | ---------------------------------------------------- |
+| Start the dev API         | `composer run dev`                                   |
+| Run migrations            | `composer run migrate`                               |
+| Reset DB (drop + migrate) | `composer run migrate:fresh` — destructive, dev only |
+| Run tests                 | `composer test` (alias: `npm test`)                  |
+| Format all PHP            | `npm run format:php` (`php-cs-fixer fix`)            |
+| Check PHP formatting      | `npm run format:php:check`                           |
+| Format JS/JSON/MD         | `npm run format` (Prettier)                          |
+| Frontend dev (port 5173)  | `npm run dev` — run from the repo root               |
+| Install frontend deps     | `npm --prefix frontend install` (once)               |
+| Frontend production build | `npm run build:frontend`                             |
 
 `composer run dev` runs
 `php -S localhost:8000 -t public public/index.php` — note `public/index.php` is
-passed as the **router script**, so *every* URL goes through the front
+passed as the **router script**, so _every_ URL goes through the front
 controller instead of being mapped to a file.
 
 **Always run the PHP formatter after editing `.php` files.** OpenCode also runs
@@ -257,7 +260,7 @@ Response::send()                  Status + headers + JSON body → client
 │   ├── migrate.php                   # `composer run migrate` entry point
 │   └── migrations/                   # one file per migration
 ├── docs/reference/                   # see §11
-├── tests/                            # empty for now
+├── tests/                            # PHPUnit suite (TestCase + *Test.php), uses .env.testing
 ├── frontend/                         # React + Vite SPA (api.js, auth.jsx, views/)
 ├── .env / .env.example               # config (JWT + admin seed live here)
 └── opencode.json
@@ -374,11 +377,11 @@ Terms are defined in [`docs/reference/glossary.md`](docs/reference/glossary.md).
 
 Updating these is part of the deliverable, not an afterthought.
 
-| File | What it explains |
-| ---- | ---------------- |
+| File                                                                         | What it explains                                                                                           |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | [`docs/reference/request-lifecycle.md`](docs/reference/request-lifecycle.md) | request → front controller → router → middleware → controller → model → DB → JSON, including the auth flow |
-| [`docs/reference/architecture.md`](docs/reference/architecture.md) | layers, responsibilities, dependency direction, how to add an endpoint |
-| [`docs/reference/glossary.md`](docs/reference/glossary.md) | plain-language definitions of every term (JWT, middleware, enum, migration, bcrypt…) |
+| [`docs/reference/architecture.md`](docs/reference/architecture.md)           | layers, responsibilities, dependency direction, how to add an endpoint                                     |
+| [`docs/reference/glossary.md`](docs/reference/glossary.md)                   | plain-language definitions of every term (JWT, middleware, enum, migration, bcrypt…)                       |
 
 Add new terms to the glossary; update the lifecycle/architecture docs when a
 layer changes.
@@ -393,7 +396,8 @@ layer changes.
 - **No rate limiting** on `POST /auth/login` (brute-force protection).
 - **No password reset / email verification.**
 - **No pagination** on `GET /` and `GET /admin/users`.
-- **No tests yet.** Add PHPUnit when the human asks.
+- **Tests drive the API end-to-end** through `Application::handle()`; there are
+  no unit tests for internal classes (Router, JwtService, …) yet.
 - **Roles can't be changed through the API** — an admin would need SQL, or a new
   `PATCH /admin/users/{id}/role` endpoint (a good next exercise).
 - The database is rebuilt entirely from migrations, with real FKs on
@@ -409,6 +413,7 @@ layer changes.
    leaked hashes, no self-assigned admin).
 3. Non-obvious parts have a short "why" comment.
 4. `npm run format:php` run; files clean.
-5. Concrete verification given (curl command + expected status/body).
-6. Explained where the change fits in the request lifecycle.
-7. New concepts/layers added to the `docs/reference/` files.
+5. `composer test` passes; new behavior has tests in `tests/`.
+6. Concrete verification given (curl command + expected status/body).
+7. Explained where the change fits in the request lifecycle.
+8. New concepts/layers added to the `docs/reference/` files.

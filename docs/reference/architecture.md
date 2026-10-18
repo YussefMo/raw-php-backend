@@ -26,16 +26,16 @@ src/Database/           ← PDO connection + migration runner
 src/Config/             ← Environment / settings
 ```
 
-| Layer              | Key files                                             | Responsibility                                            | Must NOT do                     |
-| ------------------ | ----------------------------------------------------- | --------------------------------------------------------- | ------------------------------- |
-| `public/`          | `index.php`                                           | Bootstrap, run the app                                    | business logic, SQL             |
-| `Core`             | `Application`, `Router`, `HttpException`              | Wire objects, match routes, run middleware pipeline       | SQL, business rules             |
-| `Http`             | `Request`, `Response`, `Middleware/*`                 | Represent HTTP; cross-cutting concerns (CORS, auth, roles)| SQL, business rules             |
-| `Auth`             | `Role`, `JwtService`                                  | Roles and JWT issuing/verifying                           | SQL, echoing output             |
-| `Controllers`      | `AuthController`, `PostController`, `UserController`  | Read input, validate, call models, return `Response`      | write SQL, **echo**             |
-| `Models`           | `User`, `Post`                                        | Own the SQL, map rows to objects/arrays                   | know about HTTP, echo           |
-| `Database`         | `Database`, `Migrator`, `MigrationInterface`          | Connection + schema changes                               | business rules                  |
-| `Config`           | `Config`                                              | Read `.env`, hand out values                              | anything else                   |
+| Layer         | Key files                                            | Responsibility                                             | Must NOT do           |
+| ------------- | ---------------------------------------------------- | ---------------------------------------------------------- | --------------------- |
+| `public/`     | `index.php`                                          | Bootstrap, run the app                                     | business logic, SQL   |
+| `Core`        | `Application`, `Router`, `HttpException`             | Wire objects, match routes, run middleware pipeline        | SQL, business rules   |
+| `Http`        | `Request`, `Response`, `Middleware/*`                | Represent HTTP; cross-cutting concerns (CORS, auth, roles) | SQL, business rules   |
+| `Auth`        | `Role`, `JwtService`                                 | Roles and JWT issuing/verifying                            | SQL, echoing output   |
+| `Controllers` | `AuthController`, `PostController`, `UserController` | Read input, validate, call models, return `Response`       | write SQL, **echo**   |
+| `Models`      | `User`, `Post`                                       | Own the SQL, map rows to objects/arrays                    | know about HTTP, echo |
+| `Database`    | `Database`, `Migrator`, `MigrationInterface`         | Connection + schema changes                                | business rules        |
+| `Config`      | `Config`                                             | Read `.env`, hand out values                               | anything else         |
 
 ### The one-way rule
 
@@ -164,6 +164,23 @@ example that also seeds the admin from `.env`.
 
 ## Testing
 
-There is no test suite yet. Verify changes with `curl` (see AGENTS.md §4). When
-tests are added, prefer plain PHPUnit: unit-test models and pure functions, then
-add a few integration tests for the auth flow.
+PHPUnit 12 lives in `tests/`. Run it with `composer test` (or `npm test`).
+
+- `tests/bootstrap.php` creates the `blogs_test` database and rebuilds its schema
+  from the real migrations, so tests always run against the production schema.
+- `tests/TestCase.php` is the base class. It sends requests through
+  `Application::handle()` — the same entry point the front controller uses — so
+  the router, middleware, controllers and SQL are all exercised, with no web
+  server needed.
+- Each test runs inside a **transaction that is rolled back**, so tests are
+  isolated and never leak data (or touch the dev database).
+- `tests/AuthTest.php` — register / login / me.
+- `tests/AuthorizationTest.php` — 401 vs 403 vs 2xx for every role gate.
+- `tests/PostCrudTest.php` — create, read, update (admin-or-owner), delete.
+- `tests/CategoryTest.php` — list, create, delete, in-use protection.
+
+To add a test: extend `Tests\TestCase`, use the `call()`, `actingAs()`,
+`adminToken()`, `createPost()` helpers, and assert with `assertStatus()` +
+`json()`.
+
+For manual checks, `curl` still works (see AGENTS.md §4).

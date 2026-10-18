@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../auth';
 
-export default function Posts({ onOpen }) {
+export default function Posts({ onOpen, onEdit }) {
   const { user, token } = useAuth();
   const [posts, setPosts] = useState(null);
   const [error, setError] = useState('');
@@ -18,6 +18,11 @@ export default function Posts({ onOpen }) {
   useEffect(() => {
     load();
   }, []);
+
+  function edit(e, id) {
+    e.stopPropagation();
+    onEdit(id);
+  }
 
   async function remove(e, id) {
     e.stopPropagation();
@@ -46,7 +51,12 @@ export default function Posts({ onOpen }) {
             </p>
             <p className="excerpt">{(p.body ?? '').slice(0, 140)}</p>
           </div>
-          {isAdmin && <button onClick={(e) => remove(e, p.id)}>Delete</button>}
+          {isAdmin && (
+            <div className="row-actions">
+              <button onClick={(e) => edit(e, p.id)}>Edit</button>
+              <button onClick={(e) => remove(e, p.id)}>Delete</button>
+            </div>
+          )}
         </li>
       ))}
     </ul>

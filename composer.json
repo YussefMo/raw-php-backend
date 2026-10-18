@@ -11,12 +11,19 @@
       "App\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
   "require-dev": {
-    "friendsofphp/php-cs-fixer": "^3.0"
+    "friendsofphp/php-cs-fixer": "^3.0",
+    "phpunit/phpunit": "^12.5"
   },
   "scripts": {
     "dev": "php -S localhost:8000 -t public public/index.php",
     "migrate": "php database/migrate.php migrate",
-    "migrate:fresh": "php database/migrate.php fresh"
+    "migrate:fresh": "php database/migrate.php fresh",
+    "test": "phpunit"
   }
 }

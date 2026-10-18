@@ -16,7 +16,7 @@ new word in the code or docs, it belongs here.
 - **Route placeholder** — a variable part of a path, written `{id}` here, e.g.
   `/posts/{id}`.
 - **Header** — metadata sent with a request or response. `Content-Type:
-  application/json` says the body is JSON.
+application/json` says the body is JSON.
 - **Status code** — the 3-digit result: `200` OK, `201` Created, `204` No
   Content, `401` Unauthorized, `403` Forbidden, `404` Not Found, `405` Method Not
   Allowed, `409` Conflict, `422` Unprocessable Entity, `500` Server Error.
@@ -44,7 +44,7 @@ new word in the code or docs, it belongs here.
 - **Type declaration** — stating expected types, e.g. `connect(): PDO`.
 - **Constructor / constructor property promotion** — `__construct()` plus the
   PHP 8 shorthand `public function __construct(private Config $config)` that
-  declares *and* assigns a property.
+  declares _and_ assigns a property.
 - **`use` statement** — imports a class so you can write short names.
 - **`final` class** — a class that cannot be extended; used here by default for
   clarity.
@@ -84,20 +84,20 @@ new word in the code or docs, it belongs here.
 
 ## Authentication & authorization
 
-- **Authentication ("authn")** — proving *who* you are (login, token).
-- **Authorization ("authz")** — deciding *what* you may do (roles).
+- **Authentication ("authn")** — proving _who_ you are (login, token).
+- **Authorization ("authz")** — deciding _what_ you may do (roles).
 - **Role** — `admin`, `author`, or `user`; stored in `users.role`.
 - **RBAC** — Role-Based Access Control: permission is decided by role.
 - **Password hashing** — turning a password into a one-way string you can store
   safely.
 - **`password_hash()`** — PHP's built-in hashing function. `PASSWORD_DEFAULT`
   currently means **bcrypt**, and is designed to be upgraded over time.
-- **bcrypt** — a deliberately *slow* hashing algorithm, which makes brute-force
+- **bcrypt** — a deliberately _slow_ hashing algorithm, which makes brute-force
   attacks expensive. It embeds a random **salt** so identical passwords get
   different hashes.
 - **`password_verify()`** — checks a plain password against a stored hash.
 - **JWT (JSON Web Token)** — a signed, self-contained token with three
-  dot-separated parts: header.payload.signature. Anyone can *read* the payload;
+  dot-separated parts: header.payload.signature. Anyone can _read_ the payload;
   the signature proves it wasn't tampered with. Issued/verified here by
   `firebase/php-jwt` through `App\Auth\JwtService`.
 - **Claims** — the fields inside a JWT payload: `iss` (issuer), `iat`
@@ -122,7 +122,7 @@ new word in the code or docs, it belongs here.
 - **Router script** — the file passed to `php -S` so every URL is handled by PHP
   instead of being mapped to a file on disk.
 - **Router** — maps method + path to a handler (`src/Core/Router.php`).
-- **Middleware** — code that runs *around* a request (CORS, auth, roles). It can
+- **Middleware** — code that runs _around_ a request (CORS, auth, roles). It can
   pass control on with `$next($request)` or short-circuit with a response.
 - **Pipeline** — the ordered chain of middleware wrapping the controller.
 - **Controller** — the HTTP-layer class (read input → call model → return
@@ -142,6 +142,11 @@ new word in the code or docs, it belongs here.
 
 - **php-cs-fixer** — reformats PHP to a chosen style (`.php-cs-fixer.dist.php`);
   run with `npm run format:php`.
+- **PHPUnit** — the test framework (`tests/`, run with `composer test`).
+- **Feature test** — a test that drives the whole stack (router → middleware →
+  controller → model → DB) instead of one class. All tests here are feature tests.
+- **Transaction rollback** — wrapping each test in a DB transaction and rolling
+  it back so tests start clean; see `tests/TestCase.php`.
 - **Prettier** — formatter for JS/JSON/Markdown.
 - **PSR-12** — a widely used PHP coding style standard.
 - **Dev server** — PHP's built-in web server (`php -S`); local only.

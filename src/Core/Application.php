@@ -73,6 +73,7 @@ final class Application
         // "My Posts" and deletion: any authenticated user. Whether a caller may
         // actually delete a given post (admin vs owner) is checked in the controller.
         $this->router->get('/me/posts', [$postController, 'mine'], [$auth]);
+        $this->router->patch('/posts/{id}', [$postController, 'update'], [$auth]);
         $this->router->delete('/posts/{id}', [$postController, 'destroy'], [$auth]);
 
         // --- Author or admin ---------------------------------------------
@@ -101,23 +102,30 @@ final class Application
         ]);
     }
 
-    /** Dispatch the request and send the response. */
-    public function run(Request $request): void
+    /**
+     * Turn a request into a response. Never sends anything, so it can be called
+     * directly from tests (which read the returned Response instead of a socket).
+     */
+    public function handle(Request $request): Response
     {
         try {
-            $response = $this->router->dispatch($request);
+            return $this->router->dispatch($request);
         } catch (HttpException $e) {
             // Expected, handled failures thrown by controllers.
-            $response = Response::json(['error' => $e->getMessage()], $e->status());
+            return Response::json(['error' => $e->getMessage()], $e->status());
         } catch (Throwable $e) {
             // Unexpected failures. In production you would log $e and hide the
             // message; here we surface it so it is easy to debug and learn.
-            $response = Response::json([
+            return Response::json([
                 'error' => 'Server Error',
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
 
-        $response->send();
+    /** Dispatch the request and send the response. */
+    public function run(Request $request): void
+    {
+        $this->handle($request)->send();
     }
 }

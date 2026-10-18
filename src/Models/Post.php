@@ -35,6 +35,12 @@ final class Post
         JOIN users u ON p.user_id = u.id
         JOIN categories c ON p.category_id = c.id';
 
+    /**
+     * Columns a client may change through PATCH.
+     * `user_id` is deliberately absent: a post's owner can never be reassigned.
+     */
+    private const UPDATABLE = ['title', 'body', 'category_id'];
+
     public function __construct(
         private PDO $db,
     ) {
@@ -89,6 +95,36 @@ final class Post
         $stmt->execute([$title, $body, $categoryId, $userId]);
 
         return (int) $this->db->lastInsertId();
+    }
+
+    /**
+     * Update the given columns of a post.
+     *
+     * The column names are taken from the UPDATABLE whitelist (never from the
+     * request), and the values are bound, so this cannot be used for injection.
+     *
+     * @param array<string, mixed> $fields column => value
+     */
+    public function update(int $id, array $fields): void
+    {
+        $sets = [];
+        $params = [];
+
+        foreach ($fields as $column => $value) {
+            if (!in_array($column, self::UPDATABLE, true)) {
+                continue;
+            }
+            $sets[] = "`{$column}` = ?";
+            $params[] = $value;
+        }
+
+        if ($sets === []) {
+            return;
+        }
+
+        $params[] = $id;
+        $stmt = $this->db->prepare('UPDATE posts SET ' . implode(', ', $sets) . ' WHERE id = ?');
+        $stmt->execute($params);
     }
 
     /** Delete a post. Returns false when the id did not exist. */

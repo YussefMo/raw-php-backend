@@ -10,7 +10,12 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
   color: #111827;
   background: #f8fafc;
 }
@@ -198,6 +203,12 @@ header nav {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
 }
 
 .row input {

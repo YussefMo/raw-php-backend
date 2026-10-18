@@ -3,6 +3,7 @@ import { useAuth } from './auth';
 import Posts from './views/Posts';
 import PostDetail from './views/PostDetail';
 import CreatePost from './views/CreatePost';
+import EditPost from './views/EditPost';
 import AdminUsers from './views/AdminUsers';
 import AdminCategories from './views/AdminCategories';
 import MyPosts from './views/MyPosts';
@@ -25,21 +26,33 @@ export default function App() {
         <h1 onClick={() => go('posts')}>1st-api</h1>
 
         <nav>
-          <button className={view.name === 'posts' ? 'active' : ''} onClick={() => go('posts')}>
+          <button
+            className={view.name === 'posts' ? 'active' : ''}
+            onClick={() => go('posts')}
+          >
             Posts
           </button>
           {user && (
-            <button className={view.name === 'mine' ? 'active' : ''} onClick={() => go('mine')}>
+            <button
+              className={view.name === 'mine' ? 'active' : ''}
+              onClick={() => go('mine')}
+            >
               My Posts
             </button>
           )}
           {canPublish && (
-            <button className={view.name === 'create' ? 'active' : ''} onClick={() => go('create')}>
+            <button
+              className={view.name === 'create' ? 'active' : ''}
+              onClick={() => go('create')}
+            >
               New Post
             </button>
           )}
           {isAdmin && (
-            <button className={view.name === 'users' ? 'active' : ''} onClick={() => go('users')}>
+            <button
+              className={view.name === 'users' ? 'active' : ''}
+              onClick={() => go('users')}
+            >
               Users
             </button>
           )}
@@ -62,17 +75,41 @@ export default function App() {
             <button onClick={logout}>Logout</button>
           </div>
         ) : (
-          <button className={view.name === 'login' ? 'active' : ''} onClick={() => go('login')}>
+          <button
+            className={view.name === 'login' ? 'active' : ''}
+            onClick={() => go('login')}
+          >
             Login / Register
           </button>
         )}
       </header>
 
       <main>
-        {view.name === 'posts' && <Posts onOpen={(id) => go('post', { id })} />}
-        {view.name === 'mine' && <MyPosts onOpen={(id) => go('post', { id })} />}
-        {view.name === 'post' && <PostDetail id={view.id} onBack={() => go('posts')} />}
-        {view.name === 'create' && <CreatePost onCreated={(id) => go('post', { id })} />}
+        {view.name === 'posts' && (
+          <Posts
+            onOpen={(id) => go('post', { id })}
+            onEdit={(id) => go('edit', { id })}
+          />
+        )}
+        {view.name === 'mine' && (
+          <MyPosts
+            onOpen={(id) => go('post', { id })}
+            onEdit={(id) => go('edit', { id })}
+          />
+        )}
+        {view.name === 'edit' && (
+          <EditPost
+            id={view.id}
+            onSaved={(id) => go('post', { id })}
+            onCancel={() => go('posts')}
+          />
+        )}
+        {view.name === 'post' && (
+          <PostDetail id={view.id} onBack={() => go('posts')} />
+        )}
+        {view.name === 'create' && (
+          <CreatePost onCreated={(id) => go('post', { id })} />
+        )}
         {view.name === 'users' && <AdminUsers />}
         {view.name === 'categories' && <AdminCategories />}
         {view.name === 'login' && <Login onDone={() => go('posts')} />}

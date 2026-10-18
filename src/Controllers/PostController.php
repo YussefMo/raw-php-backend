@@ -9,13 +9,16 @@ use App\Http\Request;
 use App\Http\Response;
 use App\Models\Category;
 use App\Models\Post;
+use App\Models\User;
 
 /**
  * HTTP layer for posts.
  *
- * Reading is public; creating requires the "author" or "admin" role; deleting is
- * allowed for an admin (any post) or the post's owner. Ownership is not a static
- * role check, so it lives here rather than in RoleMiddleware.
+ * Reading is public; creating requires the "author" or "admin" role; updating
+ * and deleting are allowed for an admin (any post) or the post's owner.
+ *
+ * "admin OR owner" is not a static role check, so it lives here in a small
+ * helper rather than in RoleMiddleware.
  */
 final class PostController
 {
@@ -105,15 +108,89 @@ final class PostController
     }
 
     /**
+     * PATCH /posts/{id} — update a post.
+     *
+     * Only the fields present in the body are changed (partial update). Allowed
+     * for admins (any post) and the post's owner. `user_id` is never updatable.
+     *
+     * Body: any of { "title": "...", "body": "...", "category_id": 1 }
+     */
+    public function update(Request $request): Response
+    {
+        $user = $request->user();
+        $post = $this->findAuthorized($request, $user);
+
+        if ($post instanceof Response) {
+            return $post; // 401 / 404 / 403 already decided
+        }
+
+        $errors = [];
+        $fields = [];
+
+        if ($request->has('title')) {
+            $title = trim((string) $request->input('title', ''));
+            if ($title === '') {
+                $errors['title'] = 'Title cannot be empty.';
+            } else {
+                $fields['title'] = $title;
+            }
+        }
+
+        if ($request->has('body')) {
+            $fields['body'] = trim((string) $request->input('body', ''));
+        }
+
+        if ($request->has('category_id')) {
+            $categoryId = $request->input('category_id');
+            if (filter_var($categoryId, FILTER_VALIDATE_INT) === false) {
+                $errors['category_id'] = 'A valid category id is required.';
+            } elseif (!$this->categories->exists((int) $categoryId)) {
+                $errors['category_id'] = 'That category does not exist.';
+            } else {
+                $fields['category_id'] = (int) $categoryId;
+            }
+        }
+
+        if ($errors !== []) {
+            return Response::json(['error' => 'Validation failed', 'errors' => $errors], 422);
+        }
+
+        if ($fields === []) {
+            return Response::json(['error' => 'No updatable fields were provided.'], 422);
+        }
+
+        $id = (int) $post['id'];
+        $this->posts->update($id, $fields);
+
+        return Response::json(['data' => $this->posts->find($id)]);
+    }
+
+    /**
      * DELETE /posts/{id} — delete a post.
      *
-     * Allowed for: admins (any post) and the post's owner. Any other caller
-     * gets 403. RoleMiddleware cannot express "admin OR owner", so the check
-     * is done here.
+     * Allowed for admins (any post) and the post's owner.
      */
     public function destroy(Request $request): Response
     {
         $user = $request->user();
+        $post = $this->findAuthorized($request, $user);
+
+        if ($post instanceof Response) {
+            return $post;
+        }
+
+        $this->posts->delete((int) $post['id']);
+
+        return Response::noContent();
+    }
+
+    /**
+     * Resolve the target post and check the caller may modify it.
+     *
+     * @return array<string, mixed>|Response the post, or the error Response to send
+     */
+    private function findAuthorized(Request $request, ?User $user): array|Response
+    {
         if ($user === null) {
             return Response::json(['error' => 'Unauthorized'], 401);
         }
@@ -128,18 +205,23 @@ final class PostController
             return Response::json(['error' => "Post {$id} was not found."], 404);
         }
 
-        $isAdmin = $user->role === Role::Admin->value;
-        $isOwner = $post['user_id'] !== null && (int) $post['user_id'] === $user->id;
-
-        if (!$isAdmin && !$isOwner) {
+        if (!$this->canModify($user, $post)) {
             return Response::json([
                 'error' => 'Forbidden',
-                'message' => 'You can only delete your own posts.',
+                'message' => 'You can only change your own posts.',
             ], 403);
         }
 
-        $this->posts->delete($id);
+        return $post;
+    }
 
-        return Response::noContent();
+    /** Admins may change any post; everyone else only the ones they own. */
+    private function canModify(User $user, array $post): bool
+    {
+        if ($user->role === Role::Admin->value) {
+            return true;
+        }
+
+        return $post['user_id'] !== null && (int) $post['user_id'] === $user->id;
     }
 }

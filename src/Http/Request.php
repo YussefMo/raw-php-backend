@@ -41,19 +41,49 @@ final class Request
      */
     public static function capture(): self
     {
-        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-
-        // Only the path (not the query string). Normalise so "/id/" and "/id"
-        // are treated as the same route.
-        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-        $path = rtrim($path, '/');
-        if ($path === '') {
-            $path = '/';
-        }
-
         $headers = self::captureHeaders();
 
-        return new self($method, $path, $_GET, self::captureBody($headers), $headers);
+        return new self(
+            strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'),
+            self::normalizePath((string) ($_SERVER['REQUEST_URI'] ?? '/')),
+            $_GET,
+            self::captureBody($headers),
+            $headers
+        );
+    }
+
+    /**
+     * Build a Request from explicit values, without any superglobals.
+     *
+     * Used by the test suite, which calls the Application directly instead of
+     * going through a real HTTP server.
+     *
+     * @param array<string, mixed>  $body
+     * @param array<string, string> $headers header name => value, any case
+     * @param array<string, mixed>  $query
+     */
+    public static function create(
+        string $method,
+        string $path,
+        array $body = [],
+        array $headers = [],
+        array $query = [],
+    ): self {
+        $normalized = [];
+        foreach ($headers as $name => $value) {
+            $normalized[strtolower($name)] = $value;
+        }
+
+        return new self(strtoupper($method), self::normalizePath($path), $query, $body, $normalized);
+    }
+
+    /** Strip the query string and trailing slash: "/posts/1/?x=2" -> "/posts/1". */
+    private static function normalizePath(string $uri): string
+    {
+        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+        $path = rtrim($path, '/');
+
+        return $path === '' ? '/' : $path;
     }
 
     /** @return array<string, string> */
@@ -126,6 +156,17 @@ final class Request
     public function input(string $key, mixed $default = null): mixed
     {
         return $this->body[$key] ?? $default;
+    }
+
+    /**
+     * Was this key actually present in the body?
+     *
+     * Partial updates (PATCH) need this to tell "not sent" apart from
+     * "sent as null/empty", so untouched fields are left alone.
+     */
+    public function has(string $key): bool
+    {
+        return array_key_exists($key, $this->body);
     }
 
     /** Read a request header, case-insensitively. */
